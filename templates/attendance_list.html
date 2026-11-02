@@ -1,0 +1,43 @@
+{% extends 'layout.html' %}
+{% load static %}
+
+{% block content %}
+<div class="panel panel-default">
+    <div class="panel-heading">考勤管理</div>
+    <div class="panel-body">
+        <a href="/attendance/add/" class="btn btn-primary">新建考勤</a>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-body">
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>员工</th>
+                    <th>日期</th>
+                    <th>上班时间</th>
+                    <th>下班时间</th>
+                    <th>状态</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for obj in queryset %}
+                <tr>
+                    <td>{{ obj.id }}</td>
+                    <td>{{ obj.employee.name }}</td>
+                    <td>{{ obj.date }}</td>
+                    <td>{{ obj.clock_in|default:"-" }}</td>
+                    <td>{{ obj.clock_out|default:"-" }}</td>
+                    <td>{{ obj.get_status_display }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <ul class="pagination">
+            {{ page_string|safe }}
+        </ul>
+    </div>
+</div>
+{% endblock %}

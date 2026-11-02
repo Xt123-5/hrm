@@ -1,0 +1,62 @@
+{% extends 'layout.html' %}
+{% load static %}
+
+{% block content %}
+<div class="panel panel-default">
+    <div class="panel-heading">薪资管理</div>
+    <div class="panel-body">
+        <form class="form-inline" method="get">
+            <div class="form-group">
+                <input type="text" name="month" class="form-control" placeholder="月份(2026-01)" value="{{ search_month }}">
+            </div>
+            <div class="form-group">
+                <select name="employee" class="form-control">
+                    <option value="">全部员工</option>
+                    {% for emp in employee_list %}
+                    <option value="{{ emp.id }}" {% if search_employee == emp.id|stringformat:"i" %}selected{% endif %}>{{ emp.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-default">筛选</button>
+            <a href="/salary/add/" class="btn btn-primary">新建薪资</a>
+        </form>
+    </div>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-body">
+        <table class="table table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>员工</th>
+                    <th>月份</th>
+                    <th>基本工资</th>
+                    <th>奖金</th>
+                    <th>扣款</th>
+                    <th>实发工资</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for obj in queryset %}
+                <tr>
+                    <td>{{ obj.id }}</td>
+                    <td>{{ obj.employee.name }}</td>
+                    <td>{{ obj.month }}</td>
+                    <td>{{ obj.base }}</td>
+                    <td>{{ obj.bonus }}</td>
+                    <td>{{ obj.deduction }}</td>
+                    <td>{{ obj.total }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="alert alert-info">
+            薪资总额：¥{{ total_sum }}
+        </div>
+        <ul class="pagination">
+            {{ page_string|safe }}
+        </ul>
+    </div>
+</div>
+{% endblock %}
