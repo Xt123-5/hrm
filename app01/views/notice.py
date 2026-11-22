@@ -14,7 +14,8 @@ from app01.utils.pagination import Pagination
 def notice_list(request):
     """公告列表：置顶优先，支持搜索"""
     search_title = request.GET.get("title", "")
-    queryset = models.Notice.objects.all()
+    # select_related 优化：一次性查出关联的publisher，避免N+1查询
+    queryset = models.Notice.objects.select_related('publisher').all()
     if search_title:
         queryset = queryset.filter(title__icontains=search_title)
     # 置顶的排前面
@@ -46,3 +47,16 @@ def notice_add(request):
         form.save()
         return redirect("/notice/list/")
     return render(request, "change.html", {"form": form, "title": "发布公告"})
+
+
+# ============================================================
+# 切换公告置顶状态
+# URL: /notice/<int:nid>/toggle_top/
+# ============================================================
+def notice_toggle_top(request, nid):
+    """切换公告置顶/取消置顶"""
+    notice_obj = models.Notice.objects.filter(id=nid).first()
+    if notice_obj:
+        notice_obj.is_top = not notice_obj.is_top  # 取反
+        notice_obj.save()
+    return redirect("/notice/list/")

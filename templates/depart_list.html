@@ -1,36 +1,107 @@
 {% extends 'layout.html' %}
 
+{% block title %}部门管理 - HRMS{% endblock %}
+{% block page_title %}部门管理{% endblock %}
+
 {% block content %}
-<div>
-    <a class="btn btn-success" href="/depart/add/">
-        <span class="glyphicon glyphicon-plus-sign"></span> 新建部门
-    </a>
-</div>
-<div class="panel panel-default" style="margin-top: 10px;">
-    <div class="panel-heading">
-        <span class="glyphicon glyphicon-th-list"></span> 部门列表
+<!-- 统计卡片 -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon blue">
+            <span class="glyphicon glyphicon-briefcase"></span>
+        </div>
+        <div class="stat-info">
+            <h4>{{ queryset|length }}</h4>
+            <p>部门总数</p>
+        </div>
     </div>
-    <table class="table table-bordered">
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>名称</th>
-            <th>操作</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for obj in queryset %}
-        <tr>
-            <td>{{ obj.id }}</td>
-            <td>{{ obj.title }}</td>
-            <td>
-                <a class="btn btn-primary btn-xs" href="/depart/{{ obj.id }}/edit/">编辑</a>
-                <a class="btn btn-danger btn-xs" href="/depart/{{ obj.id }}/delete/"
-                   onclick="return confirm('确定删除该部门？')">删除</a>
-            </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <div class="stat-card">
+        <div class="stat-icon green">
+            <span class="glyphicon glyphicon-user"></span>
+        </div>
+        <div class="stat-info">
+            <h4>{{ total_employees|default:"-" }}</h4>
+            <p>员工总数</p>
+        </div>
+    </div>
+</div>
+
+<!-- 批量导入部门 -->
+<div class="card">
+    <div class="card-header">
+        <h3>
+            <span class="glyphicon glyphicon-upload"></span>
+            批量导入部门（Excel）
+        </h3>
+    </div>
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data" action="/depart/multi/" class="form-inline">
+            {% csrf_token %}
+            <div class="form-group" style="margin-right: 10px;">
+                <input type="file" name="exc" class="form-control">
+            </div>
+            <button type="submit" class="btn-modern btn-modern-info btn-sm">
+                <span class="glyphicon glyphicon-upload"></span> 上传
+            </button>
+            <span style="color: #868E96; font-size: 13px; margin-left: 10px;">
+                Excel 第一列从第 2 行开始填写部门名，重复名称自动跳过
+            </span>
+        </form>
+    </div>
+</div>
+
+<!-- 部门列表 -->
+<div class="card">
+    <div class="card-header">
+        <h3>
+            <span class="glyphicon glyphicon-list"></span>
+            部门列表
+        </h3>
+        <a href="/depart/add/" class="btn-modern btn-modern-success">
+            <span class="glyphicon glyphicon-plus"></span> 新建部门
+        </a>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <table class="table-modern">
+            <thead>
+            <tr>
+                <th style="width: 80px;">ID</th>
+                <th>部门名称</th>
+                <th>员工数量</th>
+                <th style="width: 200px;">操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for obj in queryset %}
+            <tr>
+                <td>{{ obj.id }}</td>
+                <td>
+                    <span class="glyphicon glyphicon-folder-close" style="color: #4F6EF7; margin-right: 8px;"></span>
+                    <strong>{{ obj.title }}</strong>
+                </td>
+                <td>
+                    <span class="badge-modern badge-info">{{ obj.userinfo_set.count }} 人</span>
+                </td>
+                <td>
+                    <a class="btn-modern btn-modern-primary btn-sm" href="/depart/{{ obj.id }}/edit/">
+                        <span class="glyphicon glyphicon-pencil"></span> 编辑
+                    </a>
+                    <a class="btn-modern btn-modern-danger btn-sm" href="/depart/{{ obj.id }}/delete/"
+                       onclick="return confirm('确定删除该部门？')">
+                        <span class="glyphicon glyphicon-trash"></span> 删除
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="text-align: center; color: #ADB5BD; padding: 40px;">
+                    <span class="glyphicon glyphicon-inbox" style="font-size: 40px; display: block; margin-bottom: 10px;"></span>
+                    暂无部门数据
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

@@ -29,14 +29,11 @@ def login(request):
     user_code = request.POST.get("code")           # 用户输入的验证码
 
     # ---- 第1步：校验图片验证码 ----
-    # 从session取出之前生成验证码时存的正确值
     session_code = request.session.get('image_code', '')
-    # 不区分大小写比对
     if user_code.upper() != session_code.upper():
         return render(request, "login.html", {"error": "验证码错误"})
 
     # ---- 第2步：校验用户名密码 ----
-    # 密码要MD5加密后和数据库里的加密值比对
     admin_object = models.Admin.objects.filter(
         username=username,
         password=md5(password)
@@ -45,12 +42,34 @@ def login(request):
         return render(request, "login.html", {"error": "用户名或密码错误"})
 
     # ---- 第3步：登录成功，写入session ----
-    # session里存用户ID和用户名，后续中间件和页面用
     request.session["info"] = {
         "id": admin_object.id,
         "name": admin_object.username
     }
-    return redirect("/admin/list/")
+
+    # ---- 第4步：根据角色跳转不同首页 ----
+    roles = [r.title for r in admin_object.roles.all()]
+    if "超级管理员" in roles:
+        return redirect("/depart/list/")
+    elif "部门管理员" in roles:
+        return redirect("/user/list/")
+    else:
+        # 普通员工默认进入公告页
+        return redirect("/notice/list/")
+
+
+# ============================================================
+# 首页 - 根据角色跳转
+# URL: /index/
+# ============================================================
+def index(request):
+    """首页：根据用户角色跳转到对应的默认页面"""
+    if hasattr(request, 'is_super_admin') and request.is_super_admin:
+        return redirect("/depart/list/")
+    elif hasattr(request, 'is_dept_admin') and request.is_dept_admin:
+        return redirect("/user/list/")
+    else:
+        return redirect("/notice/list/")
 
 
 # ============================================================
@@ -59,5 +78,5 @@ def login(request):
 # ============================================================
 def logout(request):
     """注销：清除session，跳回登录页"""
-    request.session.clear()          # 清除所有session数据
-    return redirect("/login/")       # 跳回登录页
+    request.session.clear()
+    return redirect("/login/")

@@ -78,7 +78,7 @@ WSGI_APPLICATION = 'ems.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'ems',
+        'NAME': 'ems2',
         'USER': 'root',
         'PASSWORD': '1346790www',
         'HOST': '127.0.0.1',
@@ -141,3 +141,67 @@ TEMPLATES[0]['DIRS'] = [BASE_DIR / 'templates']
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ============================================================
+# 安全加固配置（T13）
+# ============================================================
+# 安全响应头（生产环境生效）
+SECURE_CONTENT_TYPE_NOSNIFF = True       # 防止浏览器猜测MIME类型
+SECURE_BROWSER_XSS_FILTER = True         # 开启XSS过滤
+X_FRAME_OPTIONS = 'DENY'                 # 防止点击劫持
+
+# Session安全配置
+SESSION_COOKIE_HTTPONLY = True           # 防止JS读取Cookie
+SESSION_COOKIE_AGE = 3600 * 8            # 会话有效期8小时
+
+# ============================================================
+# 分级日志配置（T13）
+# ============================================================
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'default': {
+            'format': '[{asctime}] {levelname} {module}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'default',
+        },
+        'file': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'django.log',
+            'maxBytes': 1024 * 1024 * 10,  # 10MB
+            'backupCount': 5,
+            'formatter': 'default',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'app01': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+
+# 确保日志目录存在
+import os
+os.makedirs(BASE_DIR / 'logs', exist_ok=True)
+
+# ============================================================
+# 大模型配置（AI 智能助手）
+# ============================================================
+AI_API_KEY = "sk-dopxhhbrarwqwhzyktddceaydamuumhdvkcvrdrfpkryqadh"
+AI_BASE_URL = "https://api.siliconflow.cn/v1"
+AI_MODEL = "THUDM/GLM-Z1-9B-0414"

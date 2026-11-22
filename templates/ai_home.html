@@ -1,0 +1,187 @@
+{% extends 'layout.html' %}
+
+{% block title %}AI 智能助手{% endblock %}
+{% block page_title %}AI 智能助手{% endblock %}
+
+{% block content %}
+<div class="panel panel-default">
+    <div class="panel-body">
+        <ul class="nav nav-tabs" role="tablist">
+            <li role="presentation" class="active"><a href="#tab-jd" role="tab" data-toggle="tab">招聘 JD</a></li>
+            <li role="presentation"><a href="#tab-qa" role="tab" data-toggle="tab">制度问答</a></li>
+            <li role="presentation"><a href="#tab-comment" role="tab" data-toggle="tab">薪资点评</a></li>
+            <li role="presentation"><a href="#tab-chat" role="tab" data-toggle="tab">多轮对话</a></li>
+        </ul>
+
+        <div class="tab-content" style="margin-top: 20px;">
+            <!-- 招聘 JD -->
+            <div role="tabpanel" class="tab-pane active" id="tab-jd">
+                <div class="form-group">
+                    <label>岗位名称</label>
+                    <input type="text" id="jd-title" class="form-control" placeholder="例如：Java 开发工程师" style="max-width: 400px;">
+                </div>
+                <button class="btn btn-primary" id="btn-jd">生成 JD</button>
+                <div id="jd-result" class="well" style="margin-top: 15px; display: none; white-space: pre-wrap;"></div>
+            </div>
+
+            <!-- 制度问答 -->
+            <div role="tabpanel" class="tab-pane" id="tab-qa">
+                <div class="form-group">
+                    <label>请输入问题</label>
+                    <input type="text" id="qa-question" class="form-control" placeholder="例如：请假需要什么流程？" style="max-width: 400px;">
+                </div>
+                <button class="btn btn-primary" id="btn-qa">提问</button>
+                <div id="qa-result" class="well" style="margin-top: 15px; display: none; white-space: pre-wrap;"></div>
+            </div>
+
+            <!-- 薪资点评 -->
+            <div role="tabpanel" class="tab-pane" id="tab-comment">
+                <div class="form-group">
+                    <label>员工姓名</label>
+                    <select id="cmt-employee" class="form-control" style="max-width: 400px;">
+                        <option value="">加载中...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>月份</label>
+                    <select id="cmt-month" class="form-control" style="max-width: 400px;">
+                        <option value="">加载中...</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="btn-cmt">生成点评</button>
+                <div id="cmt-result" class="well" style="margin-top: 15px; display: none; white-space: pre-wrap;"></div>
+            </div>
+
+            <!-- 多轮对话 -->
+            <div role="tabpanel" class="tab-pane" id="tab-chat">
+                <div id="chat-box" class="well" style="height: 320px; overflow-y: auto; margin-bottom: 10px;"></div>
+                <div class="input-group" style="max-width: 600px;">
+                    <input type="text" id="chat-input" class="form-control" placeholder="请输入内容，回车发送">
+                    <span class="input-group-btn">
+                        <button class="btn btn-primary" id="btn-chat">发送</button>
+                    </span>
+                </div>
+                <button class="btn btn-default" id="btn-chat-clear" style="margin-top: 10px;">清空当前页面记录</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+(function () {
+    function showResult($el, data) {
+        if (data.status) {
+            $el.text(data.data).show();
+        } else {
+            $el.text("出错了：" + (data.error || "未知错误")).show();
+        }
+    }
+
+    // 招聘 JD
+    $("#btn-jd").click(function () {
+        var title = $.trim($("#jd-title").val());
+        if (!title) { alert("请输入岗位名称"); return; }
+        var $r = $("#jd-result"); $r.text("生成中...").show();
+        $.post("/ai/generate_jd/", { title: title }, function (data) {
+            showResult($r, data);
+        }, "json").fail(function () { $r.text("请求失败").show(); });
+    });
+
+    // 制度问答
+    $("#btn-qa").click(function () {
+        var q = $.trim($("#qa-question").val());
+        if (!q) { alert("请输入问题"); return; }
+        var $r = $("#qa-result"); $r.text("回答中...").show();
+        $.post("/ai/knowledge_qa/", { question: q }, function (data) {
+            showResult($r, data);
+        }, "json").fail(function () { $r.text("请求失败").show(); });
+    });
+
+    // 薪资点评
+    function loadEmployees() {
+        $.get("/ai/employees/", function (data) {
+            var $sel = $("#cmt-employee");
+            $sel.empty();
+            if (data.status && data.data.length) {
+                $.each(data.data, function (i, e) {
+                    $sel.append('<option value="' + e.name + '">' + e.name + '</option>');
+                });
+            } else {
+                $sel.append('<option value="">无可选人员</option>');
+            }
+        }, "json");
+    }
+    function loadMonths() {
+        $.get("/ai/months/", function (data) {
+            var $sel = $("#cmt-month");
+            $sel.empty();
+            if (data.status && data.data.length) {
+                $.each(data.data, function (i, m) {
+                    $sel.append('<option value="' + m + '">' + m + '</option>');
+                });
+            } else {
+                $sel.append('<option value="">暂无月份</option>');
+            }
+        }, "json");
+    }
+    $('a[href="#tab-comment"]').on("shown.bs.tab", function () { loadEmployees(); loadMonths(); });
+
+    $("#btn-cmt").click(function () {
+        var emp = $.trim($("#cmt-employee").val());
+        var month = $.trim($("#cmt-month").val());
+        if (!emp || !month) { alert("请选择员工和月份"); return; }
+        var $r = $("#cmt-result"); $r.text("生成中...").show();
+        $.post("/ai/salary_comment/", { employee: emp, month: month }, function (data) {
+            showResult($r, data);
+        }, "json").fail(function () { $r.text("请求失败").show(); });
+    });
+
+    // 多轮对话
+    function appendChat(role, content) {
+        var cls = role === "user" ? "text-primary" : "text-success";
+        var label = role === "user" ? "我" : "AI";
+        var $box = $("#chat-box");
+        $box.append(
+            '<div style="margin-bottom:8px;"><strong class="' + cls + '">' + label +
+            '：</strong><span style="white-space:pre-wrap;">' +
+            $("<div>").text(content).html() + "</span></div>"
+        );
+        $box.scrollTop($box[0].scrollHeight);
+    }
+
+    function loadHistory() {
+        $.get("/ai/chat_history/", function (data) {
+            if (data.status) {
+                $("#chat-box").empty();
+                $.each(data.data, function (i, m) { appendChat(m.role, m.content); });
+            }
+        }, "json");
+    }
+
+    function sendChat() {
+        var q = $.trim($("#chat-input").val());
+        if (!q) return;
+        appendChat("user", q);
+        $("#chat-input").val("");
+        $.post("/ai/chat/", { question: q }, function (data) {
+            if (data.status) {
+                appendChat("assistant", data.data);
+            } else {
+                appendChat("assistant", "出错了：" + (data.error || "未知错误"));
+            }
+        }, "json").fail(function () { appendChat("assistant", "请求失败"); });
+    }
+
+    $("#btn-chat").click(sendChat);
+    $("#chat-input").keydown(function (e) {
+        if (e.keyCode === 13) { sendChat(); }
+    });
+    $("#btn-chat-clear").click(function () { $("#chat-box").empty(); });
+
+    // 首次进入多轮对话标签时加载历史
+    $('a[href="#tab-chat"]').on("shown.bs.tab", function () { loadHistory(); });
+})();
+</script>
+{% endblock %}
